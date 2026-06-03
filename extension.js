@@ -150,10 +150,13 @@ function openPreviewForUri(fileUri, context) {
     // Register message receiver for manual reload events from the header bar
     panel.webview.onDidReceiveMessage(message => {
         if (message.command === 'reload') {
-            const entry = activePreviews.get(uriStr);
-            if (entry && entry.document) {
-                updatePreview(panel, entry.document, context);
-            }
+            vscode.workspace.openTextDocument(fileUri).then(document => {
+                const entry = activePreviews.get(uriStr);
+                if (entry) {
+                    entry.document = document;
+                }
+                updatePreview(panel, document, context);
+            });
         }
     });
 
