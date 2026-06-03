@@ -230,6 +230,11 @@ function getContainerHtml(initialFilePath) {
  * @param {vscode.Uri} fileUri 
  * @param {vscode.ExtensionContext} context 
  */
+/**
+ * Handles Webview creation and contents dispatch for a given file URI
+ * @param {vscode.Uri} fileUri 
+ * @param {vscode.ExtensionContext} context 
+ */
 function openPreviewForUri(fileUri, context) {
     if (!fileUri) {
         vscode.window.showErrorMessage('No file selected to preview.');
@@ -330,6 +335,12 @@ function openPreviewForUri(fileUri, context) {
                             .replace(/<!-- INJECT_SCROLL_START -->[\s\S]*?<!-- INJECT_SCROLL_END -->/g, '')
                             .replace(/<!-- INJECT_INSPECTOR_START -->[\s\S]*?<!-- INJECT_INSPECTOR_END -->/g, '');
 
+                        // Restore original CSS link tags and remove inlined <style> elements
+                        cleanHtml = cleanHtml.replace(/<!-- INLINE_CSS_ORIGINAL_START href="[^"]*" -->([\s\S]*?)<!-- INLINE_CSS_ORIGINAL_END -->\s*<style data-inlined-from="[^"]*">[\s\S]*?<\/style>/gi, '$1');
+
+                        // Restore original JS script tags and remove inlined <script> elements
+                        cleanHtml = cleanHtml.replace(/<!-- INLINE_JS_ORIGINAL_START src="[^"]*" -->([\s\S]*?)<!-- INLINE_JS_ORIGINAL_END -->\s*<script data-inlined-from="[^"]*">[\s\S]*?<\/script>/gi, '$1');
+
                         const edit = new vscode.WorkspaceEdit();
                         const fullRange = new vscode.Range(
                             preview.document.positionAt(0),
@@ -398,7 +409,7 @@ function updatePreview(panel, document, context) {
         else {
             isHtml = true;
             const baseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.dirname(filePath)));
-            content = injectPreviewScripts(document.getText(), baseUri.toString() + '/');
+            content = injectPreviewScripts(document.getText(), filePath, baseUri.toString() + '/');
         }
 
         panel.webview.postMessage({
@@ -631,9 +642,65 @@ function getVideoHtml(videoUri) {
  * @param {string} html 
  * @param {string} baseUri 
  * @returns {string}
+ */**
+ * Inlines relative CSS and JS files directly into the HTML to bypass Webview CSP blockages
+ * @param {string} html 
+ * @param {string} htmlFilePath 
+ * @returns {string}
  */
-function injectPreviewScripts(html, baseUri) {
+function inlineAssets(html, htmlFilePath) {
     let result = html;
+    const dir = path.dirname(htmlFilePath);
+
+    // Inline CSS Stylesheet Links
+    const linkRegex = /<link\s+[^>]*href=["']([^"']+\.css)["'][^>]*>/gi;
+    result = result.replace(linkRegex, (match, href) => {
+        if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
+            return match;
+        }
+        try {
+            const cssPath = path.resolve(dir, href);
+            if (fs.existsSync(cssPath)) {
+                const cssContent = fs.readFileSync(cssPath, 'utf8');
+                return `<!-- INLINE_CSS_ORIGINAL_START href="${href}" -->${match}<!-- INLINE_CSS_ORIGINAL_END -->\n<style data-inlined-from="${href}">\n${cssContent}\n</style>`;
+            }
+        } catch (err) {
+            console.error('Error inlining CSS:', href, err);
+        }
+        return match;
+    });
+
+    // Inline JS Scripts
+    const scriptRegex = /<script\s+[^>]*src=["']([^"']+\.js)["'][^>]*>\s*<\/script>/gi;
+    result = result.replace(scriptRegex, (match, src) => {
+        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//')) {
+            return match;
+        }
+        try {
+            const jsPath = path.resolve(dir, src);
+            if (fs.existsSync(jsPath)) {
+                const jsContent = fs.readFileSync(jsPath, 'utf8');
+                return `<!-- INLINE_JS_ORIGINAL_START src="${src}" -->${match}<!-- INLINE_JS_ORIGINAL_END -->\n<script data-inlined-from="${src}">\n${jsContent}\n</script>`;
+            }
+        } catch (err) {
+            console.error('Error inlining JS:', src, err);
+        }
+        return match;
+    });
+
+    return result;
+}
+
+/**
+ * Injects `<base>` tag, scroll state restoration, and edit inspector scripts
+ * @param {string} html 
+ * @param {string} htmlFilePath
+ * @param {string} baseUri 
+ * @returns {string}
+ */
+function injectPreviewScripts(html, htmlFilePath, baseUri) {
+    // 1. Inline CSS and JS assets locally
+    let result = inlineAssets(html, htmlFilePath);
     
     // Inject <base> tag
     const baseTag = `<base href="${baseUri}">`;
