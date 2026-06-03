@@ -220,7 +220,7 @@ function getContainerHtml(initialFilePath) {
                 }
             });
 
-            // Signal to VS Code extension host that Webview is loaded and listening
+            // Signal to VS Code extension host that the webview frame is loaded and ready
             vscode.postMessage({ command: 'ready' });
         </script>
     </body>
@@ -265,17 +265,16 @@ function openPreviewForUri(fileUri, context) {
     // Render unified container HTML
     panel.webview.html = getContainerHtml(fileUri.fsPath);
 
-    activePreviews.set(uriStr, { panel, document: null });
-
-    let isWebviewReady = false;
-    let loadedDocument = null;
+    activePreviews.set(uriStr, { panel, document: null, isReady: false });
 
     // Load Document
     vscode.workspace.openTextDocument(fileUri).then(document => {
-        loadedDocument = document;
-        activePreviews.get(uriStr).document = document;
-        if (isWebviewReady) {
-            updatePreview(panel, document, context);
+        const preview = activePreviews.get(uriStr);
+        if (preview) {
+            preview.document = document;
+            if (preview.isReady) {
+                updatePreview(panel, document, context);
+            }
         }
 
         panel.onDidDispose(() => {
@@ -291,9 +290,14 @@ function openPreviewForUri(fileUri, context) {
     panel.webview.onDidReceiveMessage(message => {
         switch (message.command) {
             case 'ready':
-                isWebviewReady = true;
-                if (loadedDocument) {
-                    updatePreview(panel, loadedDocument, context);
+                {
+                    const preview = activePreviews.get(uriStr);
+                    if (preview) {
+                        preview.isReady = true;
+                        if (preview.document) {
+                            updatePreview(panel, preview.document, context);
+                        }
+                    }
                 }
                 break;
             case 'reload':
@@ -332,7 +336,7 @@ function openPreviewForUri(fileUri, context) {
                         // Update target previews map
                         activePreviews.delete(uriStr);
                         uriStr = newUri.toString();
-                        activePreviews.set(uriStr, { panel, document: doc });
+                        activePreviews.set(uriStr, { panel, document: doc, isReady: true });
                         updatePreview(panel, doc, context);
                     }, err => {
                         vscode.window.showErrorMessage('Could not open file: ' + err.message);
