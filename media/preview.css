@@ -1,0 +1,411 @@
+/* Reset styles for inspector UI to avoid conflicts with user styles */
+.razer-inspector-reset,
+.razer-inspector-reset * {
+    all: revert;
+    box-sizing: border-box !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+    margin: 0;
+    padding: 0;
+}
+
+/* Floating Toolbar */
+#razer-live-preview-toolbar {
+    position: fixed !important;
+    bottom: 24px !important;
+    left: 50% !important;
+    transform: translateX(-50%) translateY(0) !important;
+    z-index: 2147483640 !important; /* Maximum possible z-index */
+    background: rgba(20, 20, 26, 0.75) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    padding: 6px 16px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    user-select: none !important;
+    opacity: 0.95 !important;
+}
+
+#razer-live-preview-toolbar:hover {
+    opacity: 1 !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 
+                0 0 1px 1px rgba(0, 240, 255, 0.2) !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+    transform: translateX(-50%) translateY(-2px) !important;
+}
+
+.razer-toolbar-content {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.razer-toolbar-logo {
+    font-size: 11px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.15em !important;
+    color: #00f0ff !important;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.4) !important;
+    text-transform: uppercase !important;
+    margin-right: 4px !important;
+}
+
+.razer-toolbar-divider {
+    width: 1px !important;
+    height: 18px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Toolbar Buttons */
+.razer-toolbar-btn {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #a0a0b0 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+}
+
+.razer-toolbar-btn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+.razer-toolbar-btn.active {
+    background: rgba(0, 240, 255, 0.15) !important;
+    color: #00f0ff !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3) !important;
+}
+
+.razer-toolbar-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    fill: currentColor !important;
+}
+
+/* Status Indicator */
+.razer-toolbar-status {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding-left: 2px !important;
+}
+
+.razer-status-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background: #10b981 !important;
+}
+
+.razer-status-dot.pulsing {
+    animation: razer-pulse-green 2s infinite !important;
+}
+
+.razer-status-text {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #10b981 !important;
+    letter-spacing: 0.05em !important;
+}
+
+@keyframes razer-pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7) !important;
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0) !important;
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0) !important;
+    }
+}
+
+/* Highlight Box (Inspect Mode Overlay) */
+#razer-live-preview-highlight {
+    position: absolute !important;
+    pointer-events: none !important;
+    z-index: 2147483630 !important;
+    display: none;
+    border: 1px dashed #00f0ff !important;
+    background: rgba(0, 240, 255, 0.08) !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.15) !important;
+    transition: all 0.05s linear !important;
+}
+
+.razer-highlight-border {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border: 1px solid rgba(0, 240, 255, 0.4) !important;
+}
+
+.razer-highlight-tag {
+    position: absolute !important;
+    top: -24px !important;
+    left: 0 !important;
+    background: linear-gradient(135deg, #00f0ff, #3b82f6) !important;
+    color: #0b0f19 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    padding: 3px 8px !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+    z-index: 2147483635 !important;
+}
+
+/* Slide-out Inspect Dashboard Popup */
+#razer-live-preview-popup {
+    position: fixed !important;
+    top: 60px !important; /* Pushed down from macOS header */
+    right: 20px !important;
+    width: 330px !important;
+    max-height: calc(100vh - 120px) !important;
+    z-index: 2147483642 !important;
+    background: rgba(16, 16, 23, 0.88) !important;
+    backdrop-filter: blur(24px) saturate(190%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(190%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    transform: translateX(120%) !important;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    color: #e2e8f0 !important;
+}
+
+#razer-live-preview-popup.visible {
+    transform: translateX(0) !important;
+}
+
+.razer-popup-header {
+    padding: 14px 16px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.razer-popup-title {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #38bdf8 !important;
+}
+
+.razer-popup-close {
+    background: transparent !important;
+    border: none !important;
+    color: #94a3b8 !important;
+    font-size: 20px !important;
+    cursor: pointer !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+}
+
+.razer-popup-close:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+/* Tabs */
+.razer-popup-tabs {
+    display: flex !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background: rgba(0, 0, 0, 0.15) !important;
+}
+
+.razer-popup-tab {
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    color: #94a3b8 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    padding: 10px 0 !important;
+    cursor: pointer !important;
+    text-align: center !important;
+    transition: all 0.2s ease !important;
+}
+
+.razer-popup-tab:hover {
+    color: #f1f5f9 !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.razer-popup-tab.active {
+    color: #00f0ff !important;
+    border-bottom-color: #00f0ff !important;
+    background: rgba(0, 240, 255, 0.04) !important;
+}
+
+/* Content Area */
+.razer-popup-body {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    padding: 16px !important;
+    min-height: 220px !important;
+    max-height: 420px !important;
+}
+
+/* Sleek Scrollbar */
+.razer-popup-body::-webkit-scrollbar {
+    width: 6px !important;
+}
+.razer-popup-body::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+.razer-popup-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-radius: 3px !important;
+}
+.razer-popup-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 240, 255, 0.3) !important;
+}
+
+.razer-tab-content {
+    display: none !important;
+}
+
+.razer-tab-content.active {
+    display: block !important;
+}
+
+/* Lists and details inside tabs */
+.razer-info-group {
+    margin-bottom: 14px !important;
+}
+
+.razer-info-label {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 6px !important;
+}
+
+.razer-info-value {
+    font-size: 12px !important;
+    color: #e2e8f0 !important;
+}
+
+/* Code Inputs for Real-Time Edits */
+.razer-editor-input {
+    background: #080a10 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 6px !important;
+    color: #e2e8f0 !important;
+    padding: 6px 10px !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+    font-size: 11px !important;
+    width: 100% !important;
+    outline: none !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.razer-editor-input:focus {
+    border-color: rgba(0, 240, 255, 0.5) !important;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.15) !important;
+}
+
+/* Grid layout for attributes and styles */
+.razer-grid-list {
+    display: grid !important;
+    grid-template-columns: auto 1fr !important;
+    gap: 10px 12px !important;
+    font-size: 11px !important;
+}
+
+.razer-grid-key {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace !important;
+    color: #f43f5e !important; /* Style key color */
+    font-weight: 600 !important;
+    word-break: break-all !important;
+}
+
+.razer-grid-list.attrs-list .razer-grid-key {
+    color: #fb923c !important; /* Attribute name color */
+}
+
+.razer-grid-val {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace !important;
+    color: #e2e8f0 !important;
+    word-break: break-all !important;
+}
+
+/* Empty indicator */
+.razer-empty-state {
+    font-size: 11px !important;
+    color: #64748b !important;
+    font-style: italic !important;
+    text-align: center !important;
+    margin-top: 30px !important;
+}
+
+/* Popup Footer */
+.razer-popup-footer {
+    padding: 12px 16px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
+    display: flex !important;
+    justify-content: flex-end !important;
+}
+
+.razer-btn-locate {
+    background: linear-gradient(135deg, #00f0ff, #3b82f6) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: #0b0f19 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    padding: 8px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    width: 100% !important;
+    justify-content: center !important;
+    box-shadow: 0 4px 12px rgba(0, 240, 255, 0.2) !important;
+}
+
+.razer-btn-locate:hover {
+    box-shadow: 0 6px 16px rgba(0, 240, 255, 0.4) !important;
+    transform: translateY(-1px) !important;
+}
+
+.razer-btn-locate:active {
+    transform: translateY(1px) !important;
+}
+
+.razer-btn-locate svg {
+    width: 14px !important;
+    height: 14px !important;
+    fill: currentColor !important;
+}

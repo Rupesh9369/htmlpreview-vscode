@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Preview - Universal Live Asset Editor & Inspector</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="logo">HTML <span>Preview</span></div>
+        <nav>
+            <a href="#features">Features</a>
+            <a href="#editor">Editor</a>
+            <a href="#roadmap">Upcoming</a>
+            <a href="https://github.com/rage/html-preview" target="_blank" class="btn btn-nav">GitHub</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="version-badge">Version 1.0.1 Out Now</div>
+            <h1>Universal Asset Previews,<br><span class="gradient-text">Redefined in Realtime</span></h1>
+            <p class="lead">Open multiple documents and preview them side-by-side inside VS Code. Renders HTML, XML, Markdown, CSVs, PDFs, images, and videos with visual code synchronizers, docked DevTools, and responsive design viewports.</p>
+            
+            <div class="cta-actions">
+                <a href="#features" class="btn btn-primary">Explore Features</a>
+                <a href="https://github.com/rage/html-preview" target="_blank" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style="margin-right:8px;"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.162 22 16.418 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                    GitHub Repository
+                </a>
+            </div>
+        </section>
+
+        <section class="features-grid" id="features">
+            <div class="card">
+                <div class="card-glow"></div>
+                <div class="card-icon">⚡</div>
+                <h3>Real-Time Live Sync</h3>
+                <p>Observe source changes cascade instantly into the preview viewport with a scroll-preserving hot-reload mechanism.</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-glow"></div>
+                <div class="card-icon">🔍</div>
+                <h3>Visual Inspector</h3>
+                <p>Hover elements inside the iframe to overlay bounding boxes and tag size details. Click elements to inspect styles and attributes.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-glow"></div>
+                <div class="card-icon">✏️</div>
+                <h3>Inline Code Edits</h3>
+                <p>Edit textual values, tag attributes, and inline CSS rules inside the panel. Edits overwrite the VS Code source document in realtime!</p>
+            </div>
+
+            <div class="card">
+                <div class="card-glow"></div>
+                <div class="card-icon">📁</div>
+                <h3>Multi-Asset Previews</h3>
+                <p>Preview Markdown formats, XML color highlights, CSV scrollable tables, Zoom-supported images, video timelines, and native PDFs.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-glow"></div>
+                <div class="card-icon">⚓</div>
+                <h3>DevTools Docking</h3>
+                <p>Dock the inspector panel on the Right, Left, or Bottom of the workspace window to suit your active workspace layout.</p>
+            </div>
+
+            <div class="card">
+                <div class="card-glow"></div>
+                <div class="card-icon">📱</div>
+                <h3>Viewport Simulator</h3>
+                <p>Trigger Desktop, Tablet, and Mobile simulation borders, or specify custom Width and Height sizes to test responsive styles.</p>
+            </div>
+        </section>
+
+        <section class="upcoming-section" id="roadmap">
+            <h2>Upcoming Features</h2>
+            <p class="subtitle">What we're working on for the next releases</p>
+            
+            <div class="roadmap-timeline">
+                <div class="timeline-item">
+                    <span class="badge">v1.1.0</span>
+                    <h4>Tailwind CSS Live Compiler</h4>
+                    <p>Edit Tailwind utility classes and see them compiled on-the-fly inside the preview window without setting up Node.js watchers.</p>
+                </div>
+                <div class="timeline-item">
+                    <span class="badge">v1.2.0</span>
+                    <h4>Localhost Proxy server</h4>
+                    <p>Tunnel your local React, Next.js, or Vue developer ports directly into the macOS browser frame to use the inspect selector on local apps.</p>
+                </div>
+                <div class="timeline-item">
+                    <span class="badge">v1.3.0</span>
+                    <h4>Full DevTools Console</h4>
+                    <p>Evaluate Javascript, audit accessibility rules, and check network request logs from a built-in terminal dashboard.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 HTML Preview. Built with ❤️ by <strong>Rage</strong>.</p>
+    </footer>
+</body>
+</html>

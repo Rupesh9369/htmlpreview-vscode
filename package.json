@@ -1,0 +1,52 @@
+{
+  "name": "html-preview",
+  "displayName": "HTML Preview",
+  "description": "A universal previewer for VS Code. Preview HTML, XML, Markdown, CSV, PDFs, images, and videos with visual inspectors, real-time code sync, devtools docking, and responsive viewport simulator.",
+  "version": "1.0.1",
+  "publisher": "rage",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rage/html-preview"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:markdown",
+    "onLanguage:xml",
+    "onLanguage:csv"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "html-preview.openPreview",
+        "title": "HTML Preview",
+        "category": "HTML Preview"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "html-preview.openPreview",
+          "when": "resourceLangId == html || resourceLangId == markdown || resourceLangId == xml || resourceExtname == .csv || resourceExtname == .ssv || resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .webp || resourceExtname == .gif || resourceExtname == .svg || resourceExtname == .mp4 || resourceExtname == .webm || resourceExtname == .pdf",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "html-preview.openPreview",
+          "when": "editorLangId == html || editorLangId == markdown || editorLangId == xml || editorLangId == csv || editorHasSelection",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0"
+  }
+}
