@@ -4,14 +4,33 @@
   "description": "A universal previewer for VS Code. Preview HTML, XML, Markdown, CSV, PDFs, images, and videos with visual inspectors, real-time code sync, devtools docking, and responsive viewport simulator.",
   "version": "1.0.1",
   "publisher": "rupesh9369",
+  "author": "rupesh9369",
+  "icon": "logo.png",
+  "keywords": [
+    "html",
+    "live preview",
+    "markdown",
+    "xml",
+    "csv",
+    "pdf",
+    "image",
+    "video",
+    "sandbox",
+    "editor"
+  ],
   "engines": {
     "vscode": "^1.75.0"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rage/html-preview"
+    "url": "https://github.com/Rupesh9369/htmlpreview-vscode.git"
   },
+  "bugs": {
+    "url": "https://github.com/Rupesh9369/htmlpreview-vscode/issues"
+  },
+  "homepage": "https://github.com/Rupesh9369/htmlpreview-vscode#readme",
   "categories": [
+    "Visualization",
     "Other"
   ],
   "activationEvents": [
