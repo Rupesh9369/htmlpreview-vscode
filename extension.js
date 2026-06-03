@@ -22,7 +22,7 @@ function activate(context) {
 
     // Create and configure VS Code Status Bar Item
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.command = 'html-preview.openPreview';
+    statusBarItem.command = 'htmlpreview-vscode.openPreview';
     statusBarItem.text = '$(play) HTML Preview';
     statusBarItem.tooltip = 'Show HTML Preview';
     context.subscriptions.push(statusBarItem);
@@ -45,7 +45,7 @@ function activate(context) {
     updateStatusBar();
 
     // Register HTML Preview Command (supporting single, bulk, and selected text previews)
-    let openPreviewDisposable = vscode.commands.registerCommand('html-preview.openPreview', (uri, selectedUris) => {
+    let openPreviewDisposable = vscode.commands.registerCommand('htmlpreview-vscode.openPreview', (uri, selectedUris) => {
         // Handle bulk selection files
         if (selectedUris && selectedUris.length > 1) {
             selectedUris.forEach(u => {

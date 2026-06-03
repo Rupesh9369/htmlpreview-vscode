@@ -1,5 +1,5 @@
 {
-  "name": "html-preview",
+  "name": "htmlpreview-vscode",
   "displayName": "HTML Preview",
   "description": "A universal previewer for VS Code. Preview HTML, XML, Markdown, CSV, PDFs, images, and videos with visual inspectors, real-time code sync, devtools docking, and responsive viewport simulator.",
   "version": "1.0.1",
@@ -43,7 +43,7 @@
   "contributes": {
     "commands": [
       {
-        "command": "html-preview.openPreview",
+        "command": "htmlpreview-vscode.openPreview",
         "title": "HTML Preview",
         "category": "HTML Preview"
       }
@@ -51,14 +51,14 @@
     "menus": {
       "explorer/context": [
         {
-          "command": "html-preview.openPreview",
+          "command": "htmlpreview-vscode.openPreview",
           "when": "resourceLangId == html || resourceLangId == markdown || resourceLangId == xml || resourceExtname == .csv || resourceExtname == .ssv || resourceExtname == .png || resourceExtname == .jpg || resourceExtname == .jpeg || resourceExtname == .webp || resourceExtname == .gif || resourceExtname == .svg || resourceExtname == .mp4 || resourceExtname == .webm || resourceExtname == .pdf",
           "group": "navigation"
         }
       ],
       "editor/context": [
         {
-          "command": "html-preview.openPreview",
+          "command": "htmlpreview-vscode.openPreview",
           "when": "editorLangId == html || editorLangId == markdown || editorLangId == xml || editorLangId == csv || editorHasSelection",
           "group": "navigation"
         }

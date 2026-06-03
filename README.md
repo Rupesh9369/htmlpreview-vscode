@@ -33,7 +33,7 @@ A premium, fast, and feature-packed universal previewer for VS Code. **HTML Prev
    ```
 2. Install the created package in VS Code:
    ```bash
-   code --install-extension html-preview-1.0.1.vsix
+   code --install-extension htmlpreview-vscode-1.0.1.vsix
    ```
 
 ---
