@@ -110,27 +110,138 @@ function activate(context) {
  * @param {vscode.Uri} fileUri 
  * @param {vscode.ExtensionContext} context 
  */
+/**
+ * Unified container HTML with address bar, reload button, and Dev Overlay toggle.
+ */
+function getContainerHtml(initialFilePath) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #060810; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+            .header-bar { height: 48px; background: rgba(13, 17, 28, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; padding: 0 16px; gap: 12px; box-sizing: border-box; }
+            .logo { color: #00f0ff; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; user-select: none; }
+            .btn-reload { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #cbd5e1; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; outline: none; }
+            .btn-reload:hover { background: rgba(0, 240, 255, 0.1); border-color: #00f0ff; color: #00f0ff; }
+            .address-bar { flex: 1; height: 32px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 0 12px; color: #cbd5e1; font-family: monospace; font-size: 12px; outline: none; transition: border-color 0.2s; }
+            .address-bar:focus { border-color: #00f0ff; }
+            .toggle-container { display: flex; align-items: center; gap: 8px; color: #cbd5e1; font-size: 12px; font-weight: 600; user-select: none; }
+            .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+            .switch input { opacity: 0; width: 0; height: 0; }
+            .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); transition: .3s; border-radius: 20px; }
+            .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: #cbd5e1; transition: .3s; border-radius: 50%; }
+            input:checked + .slider { background-color: rgba(0, 240, 255, 0.2); border-color: #00f0ff; }
+            input:checked + .slider:before { transform: translateX(16px); background-color: #00f0ff; }
+            .preview-frame { flex: 1; border: none; background: #fff; width: 100%; height: 100%; }
+        </style>
+    </head>
+    <body>
+        <div class="header-bar">
+            <div class="logo">⚡ Live Preview HTML</div>
+            <button class="btn-reload" id="reload-btn">
+                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                Reload
+            </button>
+            <input type="text" class="address-bar" id="address-input" value="${initialFilePath.replace(/\\/g, '/')}" placeholder="Enter file path or localhost URL..." />
+            <div class="toggle-container" id="inspector-toggle-wrap">
+                <span>Dev Overlay</span>
+                <label class="switch">
+                    <input type="checkbox" id="inspector-toggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <iframe class="preview-frame" id="preview-iframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+        <script>
+            const vscode = acquireVsCodeApi();
+            const iframe = document.getElementById('preview-iframe');
+            const addressInput = document.getElementById('address-input');
+            const reloadBtn = document.getElementById('reload-btn');
+            const inspectorToggle = document.getElementById('inspector-toggle');
+            const inspectorToggleWrap = document.getElementById('inspector-toggle-wrap');
+
+            // Handle messages from VS Code
+            window.addEventListener('message', event => {
+                const message = event.data;
+                if (message.command === 'updateContent') {
+                    addressInput.value = message.filePath;
+                    if (message.isHtml) {
+                        inspectorToggleWrap.style.display = 'flex';
+                        iframe.removeAttribute('src');
+                        iframe.srcdoc = message.content;
+                    } else {
+                        inspectorToggleWrap.style.display = 'none';
+                        if (message.isUrl) {
+                            iframe.removeAttribute('srcdoc');
+                            iframe.src = message.content;
+                        } else {
+                            iframe.removeAttribute('src');
+                            iframe.srcdoc = message.content;
+                        }
+                    }
+                }
+            });
+
+            // Address bar input handler
+            addressInput.addEventListener('keydown', event => {
+                if (event.key === 'Enter') {
+                    const val = addressInput.value.trim();
+                    if (val.startsWith('http://') || val.startsWith('https://')) {
+                        vscode.postMessage({ command: 'loadUrl', url: val });
+                    } else {
+                        vscode.postMessage({ command: 'loadFile', path: val });
+                    }
+                }
+            });
+
+            // Reload handler
+            reloadBtn.addEventListener('click', () => {
+                vscode.postMessage({ command: 'reload' });
+            });
+
+            // Inspector Toggle handler
+            inspectorToggle.addEventListener('change', () => {
+                iframe.contentWindow.postMessage({
+                    type: 'toggleInspector',
+                    active: inspectorToggle.checked
+                }, '*');
+            });
+
+            // Listen for updates from the iframe (element editing)
+            window.addEventListener('message', event => {
+                const message = event.data;
+                if (message.type === 'updateDocumentHtml') {
+                    vscode.postMessage({
+                        command: 'saveHtml',
+                        html: message.html
+                    });
+                }
+            });
+        </script>
+    </body>
+    </html>
+    `;
+}
+
+/**
+ * Handles Webview creation and contents dispatch for a given file URI
+ * @param {vscode.Uri} fileUri 
+ * @param {vscode.ExtensionContext} context 
+ */
 function openPreviewForUri(fileUri, context) {
     if (!fileUri) {
         vscode.window.showErrorMessage('No file selected to preview.');
         return;
     }
 
-    const editor = vscode.window.activeTextEditor;
-    let isSelectionPreview = false;
-    let selectedText = '';
+    let uriStr = fileUri.toString();
 
-    // Check if there is an active editor selection
-    if (editor && editor.document.uri.toString() === fileUri.toString() && !editor.selection.isEmpty) {
-        isSelectionPreview = true;
-        selectedText = editor.document.getText(editor.selection);
-    }
-
-    const uriStr = isSelectionPreview ? `selection-${Date.now()}` : fileUri.toString();
-
+    // Create and show Webview panel
     const panel = vscode.window.createWebviewPanel(
         'htmlPreview.preview',
-        isSelectionPreview ? 'HTML Selection Sandbox' : `Preview: ${path.basename(fileUri.fsPath)}`,
+        `Preview: ${path.basename(fileUri.fsPath)}`,
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,
@@ -143,22 +254,15 @@ function openPreviewForUri(fileUri, context) {
         }
     );
 
-    if (!isSelectionPreview) {
-        activePreviews.set(uriStr, { panel, document: null });
-    }
+    // Render unified container HTML
+    panel.webview.html = getContainerHtml(fileUri.fsPath);
+
+    activePreviews.set(uriStr, { panel, document: null });
 
     // Load Document
     vscode.workspace.openTextDocument(fileUri).then(document => {
-        if (!isSelectionPreview) {
-            activePreviews.get(uriStr).document = document;
-        }
-
-        // Initialize content based on type
-        if (isSelectionPreview) {
-            panel.webview.html = getSandboxHtml(selectedText);
-        } else {
-            updatePreview(panel, document, context);
-        }
+        activePreviews.get(uriStr).document = document;
+        updatePreview(panel, document, context);
 
         panel.onDidDispose(() => {
             activePreviews.delete(uriStr);
@@ -167,6 +271,80 @@ function openPreviewForUri(fileUri, context) {
                 debounceTimers.delete(uriStr);
             }
         });
+    });
+
+    // Handle messages sent from Webview panel
+    panel.webview.onDidReceiveMessage(message => {
+        switch (message.command) {
+            case 'reload':
+                {
+                    const preview = activePreviews.get(uriStr);
+                    if (preview && preview.document) {
+                        vscode.workspace.openTextDocument(preview.document.uri).then(doc => {
+                            preview.document = doc;
+                            updatePreview(panel, doc, context);
+                        });
+                    }
+                }
+                break;
+            case 'loadUrl':
+                panel.webview.postMessage({
+                    command: 'updateContent',
+                    filePath: message.url,
+                    content: message.url,
+                    isHtml: false,
+                    isUrl: true
+                });
+                break;
+            case 'loadFile':
+                try {
+                    const currentPreview = activePreviews.get(uriStr);
+                    const currentDir = currentPreview && currentPreview.document
+                        ? path.dirname(currentPreview.document.uri.fsPath)
+                        : vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '';
+
+                    const fullPath = path.isAbsolute(message.path)
+                        ? message.path
+                        : path.resolve(currentDir, message.path);
+
+                    const newUri = vscode.Uri.file(fullPath);
+                    vscode.workspace.openTextDocument(newUri).then(doc => {
+                        // Update target previews map
+                        activePreviews.delete(uriStr);
+                        uriStr = newUri.toString();
+                        activePreviews.set(uriStr, { panel, document: doc });
+                        updatePreview(panel, doc, context);
+                    }, err => {
+                        vscode.window.showErrorMessage('Could not open file: ' + err.message);
+                    });
+                } catch (err) {
+                    vscode.window.showErrorMessage('Error resolving path: ' + err.message);
+                }
+                break;
+            case 'saveHtml':
+                {
+                    const preview = activePreviews.get(uriStr);
+                    if (preview && preview.document) {
+                        // Strip injected scripts from edited html before saving
+                        let cleanHtml = message.html
+                            .replace(/<!-- INJECT_SCROLL_START -->[\s\S]*?<!-- INJECT_SCROLL_END -->/g, '')
+                            .replace(/<!-- INJECT_INSPECTOR_START -->[\s\S]*?<!-- INJECT_INSPECTOR_END -->/g, '');
+
+                        const edit = new vscode.WorkspaceEdit();
+                        const fullRange = new vscode.Range(
+                            preview.document.positionAt(0),
+                            preview.document.positionAt(preview.document.getText().length)
+                        );
+                        edit.replace(preview.document.uri, fullRange, cleanHtml);
+                        vscode.workspace.applyEdit(edit).then(success => {
+                            if (success) {
+                                preview.document.save();
+                            }
+                        });
+                    }
+                }
+                break;
+        }
     });
 }
 
@@ -178,26 +356,24 @@ function updatePreview(panel, document, context) {
         const filePath = document.uri.fsPath;
         const ext = path.extname(filePath).toLowerCase();
         
+        let content = '';
+        let isHtml = false;
+
         // 1. Image formats
         const imageExts = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
         if (imageExts.includes(ext)) {
             const imageUri = panel.webview.asWebviewUri(document.uri);
-            panel.webview.html = getImageHtml(imageUri.toString());
-            return;
+            content = getImageHtml(imageUri.toString());
         }
-
         // 2. Video formats
-        const videoExts = ['.mp4', '.webm', '.ogg'];
-        if (videoExts.includes(ext)) {
+        else if (['.mp4', '.webm', '.ogg'].includes(ext)) {
             const videoUri = panel.webview.asWebviewUri(document.uri);
-            panel.webview.html = getVideoHtml(videoUri.toString());
-            return;
+            content = getVideoHtml(videoUri.toString());
         }
-
         // 3. PDF Format
-        if (ext === '.pdf') {
+        else if (ext === '.pdf') {
             const pdfUri = panel.webview.asWebviewUri(document.uri);
-            panel.webview.html = `
+            content = `
                 <!DOCTYPE html>
                 <html style="margin:0;padding:0;height:100%;">
                 <body style="margin:0;padding:0;height:100%;background:#060810;display:flex;align-items:center;justify-content:center;">
@@ -205,33 +381,32 @@ function updatePreview(panel, document, context) {
                 </body>
                 </html>
             `;
-            return;
         }
-
-        // Read textual contents
-        const fileContent = document.getText();
-
         // 4. Markdown Formatting
-        if (ext === '.md') {
-            panel.webview.html = parseMarkdown(fileContent);
-            return;
+        else if (ext === '.md') {
+            content = parseMarkdown(document.getText());
         }
-
         // 5. XML Formatting
-        if (ext === '.xml') {
-            panel.webview.html = formatXml(fileContent);
-            return;
+        else if (ext === '.xml') {
+            content = formatXml(document.getText());
         }
-
         // 6. CSV/SSV formatting
-        if (ext === '.csv' || ext === '.ssv') {
-            panel.webview.html = formatCsv(fileContent, ext === '.csv' ? ',' : ';');
-            return;
+        else if (ext === '.csv' || ext === '.ssv') {
+            content = formatCsv(document.getText(), ext === '.csv' ? ',' : ';');
+        }
+        // 7. Core HTML Code Rendering
+        else {
+            isHtml = true;
+            const baseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.dirname(filePath)));
+            content = injectPreviewScripts(document.getText(), baseUri.toString() + '/');
         }
 
-        // 7. Core HTML Code Rendering (Simple and Direct)
-        const baseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.dirname(filePath)));
-        panel.webview.html = injectBaseAndScrollScript(fileContent, baseUri.toString() + '/');
+        panel.webview.postMessage({
+            command: 'updateContent',
+            filePath: filePath,
+            content: content,
+            isHtml: isHtml
+        });
     } catch (err) {
         console.error(err);
     }
@@ -452,86 +627,12 @@ function getVideoHtml(videoUri) {
 }
 
 /**
- * Selected HTML sandbox layout with tabbed HTML/CSS/JS panels
- */
-function getSandboxHtml(initialHtml) {
-    return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { margin:0; padding:0; background:#05070f; font-family:-apple-system, sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
-            .sandbox-header { height:44px; background:rgba(22, 22, 29, 0.95); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; padding:0 16px; justify-content:space-between; }
-            .sandbox-title { color:#00f0ff; font-weight:700; font-size:12px; letter-spacing:1px; }
-            .sandbox-split { flex:1; display:flex; height:calc(100vh - 44px); }
-            .editor-pane { width:45%; border-right:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; background:#080a10; }
-            .editor-tabs { display:flex; background:rgba(0,0,0,0.25); border-bottom:1px solid rgba(255,255,255,0.04); }
-            .editor-tab { flex:1; background:transparent; border:none; color:#64748b; padding:10px; font-weight:700; cursor:pointer; text-align:center; font-size:11px; border-bottom:2px solid transparent; outline:none; transition:all 0.2s; }
-            .editor-tab.active { color:#00f0ff; border-bottom-color:#00f0ff; background:rgba(0, 240, 255, 0.03); }
-            .editor-content { flex:1; display:flex; position:relative; }
-            textarea { position:absolute; top:0; left:0; width:100%; height:100%; background:transparent; border:none; color:#cbd5e1; font-family:monospace; font-size:12px; padding:16px; outline:none; resize:none; box-sizing:border-box; display:none; }
-            textarea.active { display:block; }
-            .preview-pane { flex:1; background:#fff; position:relative; }
-            iframe { border:none; width:100%; height:100%; }
-        </style>
-    </head>
-    <body>
-        <div class="sandbox-header">
-            <span class="sandbox-title">⚡ HTML SELECTION SANDBOX</span>
-            <span style="color:#64748b; font-size:10px; font-weight:700;">LIVE INTERACTIVE RUNNER</span>
-        </div>
-        <div class="sandbox-split">
-            <div class="editor-pane">
-                <div class="editor-tabs">
-                    <button class="editor-tab active" data-editor="html">HTML</button>
-                    <button class="editor-tab" data-editor="css">CSS</button>
-                    <button class="editor-tab" data-editor="js">JS</button>
-                </div>
-                <div class="editor-content">
-                    <textarea id="editor-html" class="active" placeholder="Write HTML here...">${initialHtml}</textarea>
-                    <textarea id="editor-css" placeholder="Write CSS here..."></textarea>
-                    <textarea id="editor-js" placeholder="Write JavaScript here..."></textarea>
-                </div>
-            </div>
-            <div class="preview-pane"><iframe id="sandbox-iframe"></iframe></div>
-        </div>
-        <script>
-            const htmlArea = document.getElementById('editor-html');
-            const cssArea = document.getElementById('editor-css');
-            const jsArea = document.getElementById('editor-js');
-            const iframe = document.getElementById('sandbox-iframe');
-            
-            const tabs = document.querySelectorAll('.editor-tab');
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    document.querySelectorAll('textarea').forEach(tx => tx.classList.remove('active'));
-                    document.getElementById('editor-' + tab.getAttribute('data-editor')).classList.add('active');
-                });
-            });
-            
-            function updatePreview() {
-                iframe.srcdoc = "<!DOCTYPE html><html><head><style>" + cssArea.value + "</style></head><body>" + htmlArea.value + "<script>" + jsArea.value + "</script></body></html>";
-            }
-            htmlArea.oninput = updatePreview;
-            cssArea.oninput = updatePreview;
-            jsArea.oninput = updatePreview;
-            updatePreview();
-        </script>
-    </body>
-    </html>
-    `;
-}
-
-/**
- * Injects `<base>` and scroll preservation script into the HTML content
+ * Injects `<base>` tag, scroll state restoration, and edit inspector scripts
  * @param {string} html 
  * @param {string} baseUri 
  * @returns {string}
  */
-function injectBaseAndScrollScript(html, baseUri) {
+function injectPreviewScripts(html, baseUri) {
     let result = html;
     
     // Inject <base> tag
@@ -541,7 +642,7 @@ function injectBaseAndScrollScript(html, baseUri) {
     else { result = baseTag + result; }
     
     // Inject Scroll State Restoration script
-    const scrollScript = `
+    const scrollScript = `<!-- INJECT_SCROLL_START -->
     <script>
         (function() {
             const vscode = acquireVsCodeApi();
@@ -556,11 +657,159 @@ function injectBaseAndScrollScript(html, baseUri) {
             });
         })();
     </script>
-    `;
+    <!-- INJECT_SCROLL_END -->`;
     
-    if (result.includes('</body>')) { result = result.replace('</body>', `${scrollScript}</body>`); }
-    else if (result.includes('</BODY>')) { result = result.replace('</BODY>', `${scrollScript}</BODY>`); }
-    else { result = result + scrollScript; }
+    // Inject Dev Overlay Inspector script
+    const inspectorScript = `<!-- INJECT_INSPECTOR_START -->
+    <script>
+    (function() {
+        let inspectorActive = false;
+        let hoveredEl = null;
+
+        // Create the editing modal
+        const modal = document.createElement('div');
+        modal.id = 'live-preview-edit-modal';
+        modal.style.cssText = 'position:fixed;z-index:999999;background:#0d111c;color:#cbd5e1;border:1px solid #00f0ff;border-radius:8px;padding:16px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px;box-shadow:0 10px 25px rgba(0,0,0,0.5);width:300px;display:none;flex-direction:column;gap:10px;';
+        modal.innerHTML = \`
+            <div style="font-weight:bold;color:#00f0ff;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                <span>Edit Element: &lt;<span id="modal-tag-name"></span>&gt;</span>
+            </div>
+            <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;">Text / HTML Content:</label>
+                <textarea id="modal-text-content" rows="4" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:6px;box-sizing:border-box;font-family:monospace;font-size:11px;outline:none;resize:vertical;"></textarea>
+            </div>
+            <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;">Inline Style (CSS):</label>
+                <input type="text" id="modal-style-content" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:6px;box-sizing:border-box;outline:none;" />
+            </div>
+            <div>
+                <label style="display:block;margin-bottom:4px;font-weight:600;">Classes:</label>
+                <input type="text" id="modal-class-content" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:6px;box-sizing:border-box;outline:none;" />
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
+                <button id="modal-btn-cancel" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;outline:none;">Cancel</button>
+                <button id="modal-btn-save" style="background:#00f0ff;border:none;color:#0d111c;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:bold;outline:none;">Save Changes</button>
+            </div>
+        \`;
+        document.body.appendChild(modal);
+
+        const modalTagName = modal.querySelector('#modal-tag-name');
+        const modalText = modal.querySelector('#modal-text-content');
+        const modalStyle = modal.querySelector('#modal-style-content');
+        const modalClass = modal.querySelector('#modal-class-content');
+        const btnCancel = modal.querySelector('#modal-btn-cancel');
+        const btnSave = modal.querySelector('#modal-btn-save');
+
+        let currentEditingEl = null;
+
+        window.addEventListener('message', event => {
+            const data = event.data;
+            if (data.type === 'toggleInspector') {
+                inspectorActive = data.active;
+                if (!inspectorActive) {
+                    if (hoveredEl) {
+                        hoveredEl.style.outline = hoveredEl.dataset.origOutline || '';
+                        hoveredEl = null;
+                    }
+                    modal.style.display = 'none';
+                }
+            }
+        });
+
+        document.addEventListener('mouseover', e => {
+            if (!inspectorActive) return;
+            if (e.target === modal || modal.contains(e.target)) return;
+            
+            if (hoveredEl && hoveredEl !== e.target) {
+                hoveredEl.style.outline = hoveredEl.dataset.origOutline || '';
+            }
+            hoveredEl = e.target;
+            if (!hoveredEl.dataset.hasOwnProperty('origOutline')) {
+                hoveredEl.dataset.origOutline = hoveredEl.style.outline;
+            }
+            hoveredEl.style.outline = '2px dashed #00f0ff';
+            hoveredEl.style.outlineOffset = '-2px';
+        });
+
+        document.addEventListener('mouseout', e => {
+            if (!inspectorActive) return;
+            if (e.target === hoveredEl) {
+                hoveredEl.style.outline = hoveredEl.dataset.origOutline || '';
+                hoveredEl = null;
+            }
+        });
+
+        document.addEventListener('click', e => {
+            if (!inspectorActive) return;
+            if (e.target === modal || modal.contains(e.target)) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+
+            currentEditingEl = e.target;
+            modalTagName.textContent = currentEditingEl.tagName.toLowerCase();
+            modalText.value = currentEditingEl.innerHTML;
+            modalStyle.value = currentEditingEl.getAttribute('style') || '';
+            modalClass.value = currentEditingEl.getAttribute('class') || '';
+
+            const rect = currentEditingEl.getBoundingClientRect();
+            let top = rect.bottom + window.scrollY + 10;
+            let left = rect.left + window.scrollX;
+            
+            if (left + 320 > window.innerWidth) left = window.innerWidth - 340;
+            if (left < 10) left = 10;
+            if (top + 250 > window.innerHeight) top = rect.top + window.scrollY - 230;
+            if (top < 10) top = 10;
+
+            modal.style.top = top + 'px';
+            modal.style.left = left + 'px';
+            modal.style.display = 'flex';
+        }, true);
+
+        btnCancel.onclick = () => {
+            modal.style.display = 'none';
+            currentEditingEl = null;
+        };
+
+        btnSave.onclick = () => {
+            if (currentEditingEl) {
+                currentEditingEl.innerHTML = modalText.value;
+                if (modalStyle.value.trim() !== '') {
+                    currentEditingEl.setAttribute('style', modalStyle.value);
+                } else {
+                    currentEditingEl.removeAttribute('style');
+                }
+                if (modalClass.value.trim() !== '') {
+                    currentEditingEl.setAttribute('class', modalClass.value);
+                } else {
+                    currentEditingEl.removeAttribute('class');
+                }
+                
+                currentEditingEl.style.outline = currentEditingEl.dataset.origOutline || '';
+                delete currentEditingEl.dataset.origOutline;
+                
+                modal.style.display = 'none';
+                modal.remove();
+                
+                const docHtml = document.documentElement.outerHTML;
+                document.body.appendChild(modal);
+
+                window.parent.postMessage({
+                    type: 'updateDocumentHtml',
+                    html: '<!DOCTYPE html>\\n' + docHtml
+                }, '*');
+                
+                currentEditingEl = null;
+            }
+        };
+    })();
+    </script>
+    <!-- INJECT_INSPECTOR_END -->`;
+
+    const combined = scrollScript + '\n' + inspectorScript;
+    if (result.includes('</body>')) { result = result.replace('</body>', `${combined}</body>`); }
+    else if (result.includes('</BODY>')) { result = result.replace('</BODY>', `${combined}</BODY>`); }
+    else { result = result + combined; }
     
     return result;
 }

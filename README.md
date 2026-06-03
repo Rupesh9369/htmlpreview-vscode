@@ -4,7 +4,7 @@
   <img src="logo.png" width="128" alt="Live Preview HTML Logo">
 </p>
 
-A premium, fast, and feature-packed universal previewer for VS Code. **Live Preview HTML** allows you to open and preview HTML, Markdown, XML, CSV, PDFs, images, and videos concurrently. It supports real-time synchronization, text sandbox editors, image zooming, and custom video timeline overlays—all side-by-side inside your workspace.
+A premium, fast, and feature-packed universal previewer for VS Code. **Live Preview HTML** allows you to open and preview HTML, Markdown, XML, CSV, PDFs, images, and videos concurrently. It supports real-time synchronization, a navigation address bar, image zooming, and custom video timeline overlays—all side-by-side inside your workspace.
 
 ---
 
@@ -13,7 +13,8 @@ A premium, fast, and feature-packed universal previewer for VS Code. **Live Prev
 - 👁️ **Simultaneous Multiple Previews**: Open and arrange multiple live previews side-by-side for different files.
 - ⚡ **Real-Time Synchronisation**: Keystrokes in your HTML or saved changes in your CSS files reflect instantly in the preview with scroll-preserving hot-reload.
 - 📁 **Universal File Previews**: Renders Markdown `.md` text, formatted XML documents with tag highlights, CSV/SSV comma separated tables, zoomable images, video playback controls, and native PDFs.
-- 💻 **Interactive Selection Sandbox**: Select any HTML text in your editor, right-click, and choose **Live Preview HTML** to open a live split-pane sandbox (similar to JSFiddle/CodePen) with dedicated HTML, CSS, and JS inputs.
+- 🌐 **Unified Navigation Header**: Shows the full path to the active preview file, includes a **Reload** button, and supports opening any local path or remote localhost URL directly by typing it in.
+- 🛠️ **Toggleable Dev Overlay Inspector**: Turn the Dev Overlay on/off with a single click. Inspect elements on hover and click them to open a popup editor to edit HTML content, classes, or styles in real time.
 - ⚓ **VS Code Status Bar Launcher**: A dynamic launcher button (`⚡ Live Preview HTML`) appears automatically at the bottom of VS Code whenever you open supported files.
 
 ---
@@ -33,15 +34,15 @@ A premium, fast, and feature-packed universal previewer for VS Code. **Live Prev
    ```
 2. Install the created package in VS Code:
    ```bash
-   code --install-extension htmlpreview-vscode-1.0.1.vsix
+   code --install-extension htmlpreview-vscode-1.0.2.vsix
    ```
 
 ---
 
 ## Repository & Info
 
-- **Version**: 1.0.1
+- **Version**: 1.0.2
 - **Developer**: Rupesh9369
 - **GitHub**: [https://github.com/Rupesh9369/htmlpreview-vscode](https://github.com/Rupesh9369/htmlpreview-vscode)
 - **License**: MIT
-- **Keywords**: vscode, html, css, preview, live preview, markdown, csv, xml, pdf, image viewer, video player, realtime, sandbox, code.
+- **Keywords**: vscode, html, css, preview, live preview, markdown, csv, xml, pdf, image viewer, video player, realtime, inspector, code.
