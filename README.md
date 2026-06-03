@@ -34,14 +34,14 @@ A premium, fast, and feature-packed universal previewer for VS Code. **Live Prev
    ```
 2. Install the created package in VS Code:
    ```bash
-   code --install-extension htmlpreview-vscode-1.0.3.vsix
+   code --install-extension htmlpreview-vscode-1.0.4.vsix
    ```
 
 ---
 
 ## Repository & Info
 
-- **Version**: 1.0.3
+- **Version**: 1.0.4
 - **Developer**: Rupesh9369
 - **GitHub**: [https://github.com/Rupesh9369/htmlpreview-vscode](https://github.com/Rupesh9369/htmlpreview-vscode)
 - **License**: MIT
