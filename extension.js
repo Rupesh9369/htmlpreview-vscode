@@ -219,6 +219,9 @@ function getContainerHtml(initialFilePath) {
                     });
                 }
             });
+
+            // Signal to VS Code extension host that Webview is loaded and listening
+            vscode.postMessage({ command: 'ready' });
         </script>
     </body>
     </html>
@@ -264,10 +267,16 @@ function openPreviewForUri(fileUri, context) {
 
     activePreviews.set(uriStr, { panel, document: null });
 
+    let isWebviewReady = false;
+    let loadedDocument = null;
+
     // Load Document
     vscode.workspace.openTextDocument(fileUri).then(document => {
+        loadedDocument = document;
         activePreviews.get(uriStr).document = document;
-        updatePreview(panel, document, context);
+        if (isWebviewReady) {
+            updatePreview(panel, document, context);
+        }
 
         panel.onDidDispose(() => {
             activePreviews.delete(uriStr);
@@ -281,6 +290,12 @@ function openPreviewForUri(fileUri, context) {
     // Handle messages sent from Webview panel
     panel.webview.onDidReceiveMessage(message => {
         switch (message.command) {
+            case 'ready':
+                isWebviewReady = true;
+                if (loadedDocument) {
+                    updatePreview(panel, loadedDocument, context);
+                }
+                break;
             case 'reload':
                 {
                     const preview = activePreviews.get(uriStr);
