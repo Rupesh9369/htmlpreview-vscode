@@ -60,7 +60,7 @@
       "editor/context": [
         {
           "command": "htmlpreview-vscode.openPreview",
-          "when": "editorLangId == html || editorLangId == markdown || editorLangId == xml || editorLangId == csv",
+          "when": "editorLangId == html || editorLangId == markdown || editorLangId == xml || editorLangId == csv || editorHasSelection",
           "group": "navigation"
         }
       ]

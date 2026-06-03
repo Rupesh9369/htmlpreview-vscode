@@ -110,146 +110,27 @@ function activate(context) {
  * @param {vscode.Uri} fileUri 
  * @param {vscode.ExtensionContext} context 
  */
-/**
- * Unified container HTML with address bar, reload button, and Dev Overlay toggle.
- */
-function getContainerHtml(initialFilePath) {
-    return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: #060810; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-            .header-bar { height: 48px; background: rgba(13, 17, 28, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; padding: 0 16px; gap: 12px; box-sizing: border-box; }
-            .logo { color: #00f0ff; font-weight: 800; font-size: 13px; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; user-select: none; }
-            .btn-reload { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #cbd5e1; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 4px; outline: none; }
-            .btn-reload:hover { background: rgba(0, 240, 255, 0.1); border-color: #00f0ff; color: #00f0ff; }
-            .address-bar { flex: 1; height: 32px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 0 12px; color: #cbd5e1; font-family: monospace; font-size: 12px; outline: none; transition: border-color 0.2s; }
-            .address-bar:focus { border-color: #00f0ff; }
-            .toggle-container { display: flex; align-items: center; gap: 8px; color: #cbd5e1; font-size: 12px; font-weight: 600; user-select: none; }
-            .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
-            .switch input { opacity: 0; width: 0; height: 0; }
-            .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); transition: .3s; border-radius: 20px; }
-            .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: #cbd5e1; transition: .3s; border-radius: 50%; }
-            input:checked + .slider { background-color: rgba(0, 240, 255, 0.2); border-color: #00f0ff; }
-            input:checked + .slider:before { transform: translateX(16px); background-color: #00f0ff; }
-            .preview-frame { flex: 1; border: none; background: #fff; width: 100%; height: 100%; }
-        </style>
-    </head>
-    <body>
-        <div class="header-bar">
-            <div class="logo">⚡ Live Preview HTML</div>
-            <button class="btn-reload" id="reload-btn">
-                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                Reload
-            </button>
-            <input type="text" class="address-bar" id="address-input" value="${initialFilePath.replace(/\\/g, '/')}" placeholder="Enter file path or localhost URL..." />
-            <div class="toggle-container" id="inspector-toggle-wrap">
-                <span>Dev Overlay</span>
-                <label class="switch">
-                    <input type="checkbox" id="inspector-toggle">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </div>
-        <iframe class="preview-frame" id="preview-iframe" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
-        <script>
-            const vscode = acquireVsCodeApi();
-            const iframe = document.getElementById('preview-iframe');
-            const addressInput = document.getElementById('address-input');
-            const reloadBtn = document.getElementById('reload-btn');
-            const inspectorToggle = document.getElementById('inspector-toggle');
-            const inspectorToggleWrap = document.getElementById('inspector-toggle-wrap');
-
-            // Handle messages from VS Code
-            window.addEventListener('message', event => {
-                const message = event.data;
-                if (message.command === 'updateContent') {
-                    addressInput.value = message.filePath;
-                    if (message.isHtml) {
-                        inspectorToggleWrap.style.display = 'flex';
-                        iframe.removeAttribute('src');
-                        iframe.srcdoc = message.content;
-                    } else {
-                        inspectorToggleWrap.style.display = 'none';
-                        if (message.isUrl) {
-                            iframe.removeAttribute('srcdoc');
-                            iframe.src = message.content;
-                        } else {
-                            iframe.removeAttribute('src');
-                            iframe.srcdoc = message.content;
-                        }
-                    }
-                }
-            });
-
-            // Address bar input handler
-            addressInput.addEventListener('keydown', event => {
-                if (event.key === 'Enter') {
-                    const val = addressInput.value.trim();
-                    if (val.startsWith('http://') || val.startsWith('https://')) {
-                        vscode.postMessage({ command: 'loadUrl', url: val });
-                    } else {
-                        vscode.postMessage({ command: 'loadFile', path: val });
-                    }
-                }
-            });
-
-            // Reload handler
-            reloadBtn.addEventListener('click', () => {
-                vscode.postMessage({ command: 'reload' });
-            });
-
-            // Inspector Toggle handler
-            inspectorToggle.addEventListener('change', () => {
-                iframe.contentWindow.postMessage({
-                    type: 'toggleInspector',
-                    active: inspectorToggle.checked
-                }, '*');
-            });
-
-            // Listen for updates from the iframe (element editing)
-            window.addEventListener('message', event => {
-                const message = event.data;
-                if (message.type === 'updateDocumentHtml') {
-                    vscode.postMessage({
-                        command: 'saveHtml',
-                        html: message.html
-                    });
-                }
-            });
-
-            // Signal to VS Code extension host that the webview frame is loaded and ready
-            vscode.postMessage({ command: 'ready' });
-        </script>
-    </body>
-    </html>
-    `;
-}
-
-/**
- * Handles Webview creation and contents dispatch for a given file URI
- * @param {vscode.Uri} fileUri 
- * @param {vscode.ExtensionContext} context 
- */
-/**
- * Handles Webview creation and contents dispatch for a given file URI
- * @param {vscode.Uri} fileUri 
- * @param {vscode.ExtensionContext} context 
- */
 function openPreviewForUri(fileUri, context) {
     if (!fileUri) {
         vscode.window.showErrorMessage('No file selected to preview.');
         return;
     }
 
-    let uriStr = fileUri.toString();
+    const editor = vscode.window.activeTextEditor;
+    let isSelectionPreview = false;
+    let selectedText = '';
 
-    // Create and show Webview panel
+    // Check if there is an active editor selection
+    if (editor && editor.document.uri.toString() === fileUri.toString() && !editor.selection.isEmpty) {
+        isSelectionPreview = true;
+        selectedText = editor.document.getText(editor.selection);
+    }
+
+    const uriStr = isSelectionPreview ? `selection-${Date.now()}` : fileUri.toString();
+
     const panel = vscode.window.createWebviewPanel(
         'htmlPreview.preview',
-        `Preview: ${path.basename(fileUri.fsPath)}`,
+        isSelectionPreview ? 'HTML Selection Sandbox' : `Preview: ${path.basename(fileUri.fsPath)}`,
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,
@@ -262,19 +143,31 @@ function openPreviewForUri(fileUri, context) {
         }
     );
 
-    // Render unified container HTML
-    panel.webview.html = getContainerHtml(fileUri.fsPath);
+    if (!isSelectionPreview) {
+        activePreviews.set(uriStr, { panel, document: null });
+    }
 
-    activePreviews.set(uriStr, { panel, document: null, isReady: false });
+    // Register message receiver for manual reload events from the header bar
+    panel.webview.onDidReceiveMessage(message => {
+        if (message.command === 'reload') {
+            const entry = activePreviews.get(uriStr);
+            if (entry && entry.document) {
+                updatePreview(panel, entry.document, context);
+            }
+        }
+    });
 
     // Load Document
     vscode.workspace.openTextDocument(fileUri).then(document => {
-        const preview = activePreviews.get(uriStr);
-        if (preview) {
-            preview.document = document;
-            if (preview.isReady) {
-                updatePreview(panel, document, context);
-            }
+        if (!isSelectionPreview) {
+            activePreviews.get(uriStr).document = document;
+        }
+
+        // Initialize content based on type
+        if (isSelectionPreview) {
+            panel.webview.html = getSandboxHtml(selectedText);
+        } else {
+            updatePreview(panel, document, context);
         }
 
         panel.onDidDispose(() => {
@@ -284,97 +177,6 @@ function openPreviewForUri(fileUri, context) {
                 debounceTimers.delete(uriStr);
             }
         });
-    });
-
-    // Handle messages sent from Webview panel
-    panel.webview.onDidReceiveMessage(message => {
-        switch (message.command) {
-            case 'ready':
-                {
-                    const preview = activePreviews.get(uriStr);
-                    if (preview) {
-                        preview.isReady = true;
-                        if (preview.document) {
-                            updatePreview(panel, preview.document, context);
-                        }
-                    }
-                }
-                break;
-            case 'reload':
-                {
-                    const preview = activePreviews.get(uriStr);
-                    if (preview && preview.document) {
-                        vscode.workspace.openTextDocument(preview.document.uri).then(doc => {
-                            preview.document = doc;
-                            updatePreview(panel, doc, context);
-                        });
-                    }
-                }
-                break;
-            case 'loadUrl':
-                panel.webview.postMessage({
-                    command: 'updateContent',
-                    filePath: message.url,
-                    content: message.url,
-                    isHtml: false,
-                    isUrl: true
-                });
-                break;
-            case 'loadFile':
-                try {
-                    const currentPreview = activePreviews.get(uriStr);
-                    const currentDir = currentPreview && currentPreview.document
-                        ? path.dirname(currentPreview.document.uri.fsPath)
-                        : vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '';
-
-                    const fullPath = path.isAbsolute(message.path)
-                        ? message.path
-                        : path.resolve(currentDir, message.path);
-
-                    const newUri = vscode.Uri.file(fullPath);
-                    vscode.workspace.openTextDocument(newUri).then(doc => {
-                        // Update target previews map
-                        activePreviews.delete(uriStr);
-                        uriStr = newUri.toString();
-                        activePreviews.set(uriStr, { panel, document: doc, isReady: true });
-                        updatePreview(panel, doc, context);
-                    }, err => {
-                        vscode.window.showErrorMessage('Could not open file: ' + err.message);
-                    });
-                } catch (err) {
-                    vscode.window.showErrorMessage('Error resolving path: ' + err.message);
-                }
-                break;
-            case 'saveHtml':
-                {
-                    const preview = activePreviews.get(uriStr);
-                    if (preview && preview.document) {
-                        // Strip injected scripts from edited html before saving
-                        let cleanHtml = message.html
-                            .replace(/<!-- INJECT_SCROLL_START -->[\s\S]*?<!-- INJECT_SCROLL_END -->/g, '')
-                            .replace(/<!-- INJECT_INSPECTOR_START -->[\s\S]*?<!-- INJECT_INSPECTOR_END -->/g, '');
-
-                        // Restore original CSS link tags and remove inlined <style> elements
-                        cleanHtml = cleanHtml.replace(/<!-- INLINE_CSS_ORIGINAL_START href="[^"]*" -->([\s\S]*?)<!-- INLINE_CSS_ORIGINAL_END -->\s*<style data-inlined-from="[^"]*">[\s\S]*?<\/style>/gi, '$1');
-
-                        // Restore original JS script tags and remove inlined <script> elements
-                        cleanHtml = cleanHtml.replace(/<!-- INLINE_JS_ORIGINAL_START src="[^"]*" -->([\s\S]*?)<!-- INLINE_JS_ORIGINAL_END -->\s*<script data-inlined-from="[^"]*">[\s\S]*?<\/script>/gi, '$1');
-
-                        const edit = new vscode.WorkspaceEdit();
-                        const fullRange = new vscode.Range(
-                            preview.document.positionAt(0),
-                            preview.document.positionAt(preview.document.getText().length)
-                        );
-                        edit.replace(preview.document.uri, fullRange, cleanHtml);
-                        vscode.workspace.applyEdit(edit).then(success => {
-                            if (success) {
-                                preview.document.save();
-                            }
-                        });
-                    }
-                }
-                break;
-        }
     });
 }
 
@@ -386,57 +188,53 @@ function updatePreview(panel, document, context) {
         const filePath = document.uri.fsPath;
         const ext = path.extname(filePath).toLowerCase();
         
-        let content = '';
-        let isHtml = false;
-
         // 1. Image formats
         const imageExts = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
         if (imageExts.includes(ext)) {
             const imageUri = panel.webview.asWebviewUri(document.uri);
-            content = getImageHtml(imageUri.toString());
-        }
-        // 2. Video formats
-        else if (['.mp4', '.webm', '.ogg'].includes(ext)) {
-            const videoUri = panel.webview.asWebviewUri(document.uri);
-            content = getVideoHtml(videoUri.toString());
-        }
-        // 3. PDF Format
-        else if (ext === '.pdf') {
-            const pdfUri = panel.webview.asWebviewUri(document.uri);
-            content = `
-                <!DOCTYPE html>
-                <html style="margin:0;padding:0;height:100%;">
-                <body style="margin:0;padding:0;height:100%;background:#060810;display:flex;align-items:center;justify-content:center;">
-                    <embed src="${pdfUri}" type="application/pdf" style="width:100%;height:100%;border:none;">
-                </body>
-                </html>
-            `;
-        }
-        // 4. Markdown Formatting
-        else if (ext === '.md') {
-            content = parseMarkdown(document.getText());
-        }
-        // 5. XML Formatting
-        else if (ext === '.xml') {
-            content = formatXml(document.getText());
-        }
-        // 6. CSV/SSV formatting
-        else if (ext === '.csv' || ext === '.ssv') {
-            content = formatCsv(document.getText(), ext === '.csv' ? ',' : ';');
-        }
-        // 7. Core HTML Code Rendering
-        else {
-            isHtml = true;
-            const baseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.dirname(filePath)));
-            content = injectPreviewScripts(document.getText(), filePath, baseUri.toString() + '/');
+            panel.webview.html = getImageHtml(imageUri.toString(), filePath);
+            return;
         }
 
-        panel.webview.postMessage({
-            command: 'updateContent',
-            filePath: filePath,
-            content: content,
-            isHtml: isHtml
-        });
+        // 2. Video formats
+        const videoExts = ['.mp4', '.webm', '.ogg'];
+        if (videoExts.includes(ext)) {
+            const videoUri = panel.webview.asWebviewUri(document.uri);
+            panel.webview.html = getVideoHtml(videoUri.toString(), filePath);
+            return;
+        }
+
+        // 3. PDF Format
+        if (ext === '.pdf') {
+            const pdfUri = panel.webview.asWebviewUri(document.uri);
+            panel.webview.html = getPdfHtml(pdfUri.toString(), filePath);
+            return;
+        }
+
+        // Read textual contents
+        const fileContent = document.getText();
+
+        // 4. Markdown Formatting
+        if (ext === '.md') {
+            panel.webview.html = parseMarkdown(fileContent, filePath);
+            return;
+        }
+
+        // 5. XML Formatting
+        if (ext === '.xml') {
+            panel.webview.html = formatXml(fileContent, filePath);
+            return;
+        }
+
+        // 6. CSV/SSV formatting
+        if (ext === '.csv' || ext === '.ssv') {
+            panel.webview.html = formatCsv(fileContent, ext === '.csv' ? ',' : ';', filePath);
+            return;
+        }
+
+        // 7. Core HTML Code Rendering (Simple and Direct)
+        const baseUri = panel.webview.asWebviewUri(vscode.Uri.file(path.dirname(filePath)));
+        panel.webview.html = injectBaseAndScrollScript(fileContent, baseUri.toString() + '/', filePath);
     } catch (err) {
         console.error(err);
     }
@@ -445,7 +243,7 @@ function updatePreview(panel, document, context) {
 /**
  * Parses markdown to HTML
  */
-function parseMarkdown(md) {
+function parseMarkdown(md, filePath) {
     let html = md
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -475,6 +273,7 @@ function parseMarkdown(md) {
     <html>
     <head>
         <style>
+            html { padding-top: 34px !important; box-sizing: border-box; }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #e2e8f0; background: #05070f; padding: 32px; max-width:800px; margin:0 auto; }
             h1, h2, h3 { color: #00f0ff; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; font-family: sans-serif; }
             pre { background: #0b0f19; border: 1px solid rgba(255,255,255,0.08); padding: 16px; border-radius: 8px; overflow-x: auto; }
@@ -484,7 +283,10 @@ function parseMarkdown(md) {
             p { color: #cbd5e1; }
         </style>
     </head>
-    <body>${html}</body>
+    <body>
+        ${getHeaderBar(filePath)}
+        ${html}
+    </body>
     </html>
     `;
 }
@@ -492,7 +294,7 @@ function parseMarkdown(md) {
 /**
  * Formats XML
  */
-function formatXml(xml) {
+function formatXml(xml, filePath) {
     let escaped = xml.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     escaped = escaped.replace(/(&lt;\/?[a-zA-Z0-9:-]+)/g, '<span class="xml-tag">$1</span>');
     escaped = escaped.replace(/(\s[a-zA-Z0-9:-]+=)/g, '<span class="xml-attr">$1</span>');
@@ -502,6 +304,7 @@ function formatXml(xml) {
     <html>
     <head>
         <style>
+            html { padding-top: 34px !important; box-sizing: border-box; }
             body { background: #05070f; color: #cbd5e1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; padding: 32px; font-size:12px; line-height:1.6; }
             pre { margin:0; }
             .xml-tag { color: #f43f5e; font-weight: 700; }
@@ -509,7 +312,10 @@ function formatXml(xml) {
             .xml-val { color: #34d399; }
         </style>
     </head>
-    <body><pre><code>${escaped}</code></pre></body>
+    <body>
+        ${getHeaderBar(filePath)}
+        <pre><code>${escaped}</code></pre>
+    </body>
     </html>
     `;
 }
@@ -517,7 +323,7 @@ function formatXml(xml) {
 /**
  * Formats CSV/SSV
  */
-function formatCsv(csv, sep) {
+function formatCsv(csv, sep, filePath) {
     const lines = csv.split(/\r?\n/).filter(line => line.trim() !== '');
     if (lines.length === 0) return '<p>Empty dataset</p>';
     
@@ -538,6 +344,7 @@ function formatCsv(csv, sep) {
     <html>
     <head>
         <style>
+            html { padding-top: 34px !important; box-sizing: border-box; }
             body { font-family: -apple-system, sans-serif; padding: 24px; background: #05070f; color: #cbd5e1; }
             table { border-collapse: collapse; width: 100%; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; background:#0b0f19; }
             th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
@@ -545,7 +352,10 @@ function formatCsv(csv, sep) {
             tr:hover { background: rgba(255,255,255,0.02); }
         </style>
     </head>
-    <body>${html}</body>
+    <body>
+        ${getHeaderBar(filePath)}
+        ${html}
+    </body>
     </html>
     `;
 }
@@ -553,13 +363,14 @@ function formatCsv(csv, sep) {
 /**
  * Image Viewer
  */
-function getImageHtml(imageUri) {
+function getImageHtml(imageUri, filePath) {
     return `
     <!DOCTYPE html>
     <html>
     <head>
         <style>
-            body { margin:0; padding:0; background:#05070f; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; font-family:sans-serif; color:#fff; user-select:none; }
+            html { padding-top: 34px !important; box-sizing: border-box; }
+            body { margin:0; padding:0; background:#05070f; height:calc(100vh - 34px); display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; font-family:sans-serif; color:#fff; user-select:none; }
             .img-viewport { flex:1; width:100%; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; cursor:grab; }
             .img-viewport:active { cursor:grabbing; }
             img { max-width:90%; max-height:90%; object-fit:contain; transition:transform 0.1s ease; transform-origin:center center; }
@@ -570,6 +381,7 @@ function getImageHtml(imageUri) {
         </style>
     </head>
     <body>
+        ${getHeaderBar(filePath)}
         <div class="img-viewport" id="viewport"><img src="${imageUri}" id="preview-image" /></div>
         <div class="controls">
             <button id="btn-zoom-out">-</button>
@@ -603,13 +415,14 @@ function getImageHtml(imageUri) {
 /**
  * Video Viewer
  */
-function getVideoHtml(videoUri) {
+function getVideoHtml(videoUri, filePath) {
     return `
     <!DOCTYPE html>
     <html>
     <head>
         <style>
-            body { margin:0; padding:0; background:#05070f; height:100vh; display:flex; align-items:center; justify-content:center; font-family:sans-serif; }
+            html { padding-top: 34px !important; box-sizing: border-box; }
+            body { margin:0; padding:0; background:#05070f; height:calc(100vh - 34px); display:flex; align-items:center; justify-content:center; font-family:sans-serif; }
             .video-container { position:relative; max-width:90%; max-height:90%; border-radius:12px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.1); }
             video { width:100%; display:block; }
             .custom-controls { position:absolute; bottom:0; left:0; right:0; background:linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0)); padding:24px 16px 12px 16px; display:flex; align-items:center; gap:12px; opacity:0; transition:opacity 0.3s; }
@@ -620,6 +433,7 @@ function getVideoHtml(videoUri) {
         </style>
     </head>
     <body>
+        ${getHeaderBar(filePath)}
         <div class="video-container">
             <video id="video-player" src="${videoUri}" autoplay></video>
             <div class="custom-controls">
@@ -657,69 +471,88 @@ function getVideoHtml(videoUri) {
 }
 
 /**
- * Injects `<base>` tag, scroll state restoration, and edit inspector scripts
- * @param {string} html 
- * @param {string} baseUri 
- * @returns {string}
- */**
- * Inlines relative CSS and JS files directly into the HTML to bypass Webview CSP blockages
- * @param {string} html 
- * @param {string} htmlFilePath 
- * @returns {string}
+ * Selected HTML sandbox layout with tabbed HTML/CSS/JS panels
  */
-function inlineAssets(html, htmlFilePath) {
-    let result = html;
-    const dir = path.dirname(htmlFilePath);
-
-    // Inline CSS Stylesheet Links
-    const linkRegex = /<link\s+[^>]*href=["']([^"']+\.css)["'][^>]*>/gi;
-    result = result.replace(linkRegex, (match, href) => {
-        if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('//')) {
-            return match;
-        }
-        try {
-            const cssPath = path.resolve(dir, href);
-            if (fs.existsSync(cssPath)) {
-                const cssContent = fs.readFileSync(cssPath, 'utf8');
-                return `<!-- INLINE_CSS_ORIGINAL_START href="${href}" -->${match}<!-- INLINE_CSS_ORIGINAL_END -->\n<style data-inlined-from="${href}">\n${cssContent}\n</style>`;
+function getSandboxHtml(initialHtml) {
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { margin:0; padding:0; background:#05070f; font-family:-apple-system, sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+            .sandbox-header { height:44px; background:rgba(22, 22, 29, 0.95); border-bottom:1px solid rgba(255,255,255,0.06); display:flex; align-items:center; padding:0 16px; justify-content:space-between; }
+            .sandbox-title { color:#00f0ff; font-weight:700; font-size:12px; letter-spacing:1px; }
+            .sandbox-split { flex:1; display:flex; height:calc(100vh - 44px); }
+            .editor-pane { width:45%; border-right:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; background:#080a10; }
+            .editor-tabs { display:flex; background:rgba(0,0,0,0.25); border-bottom:1px solid rgba(255,255,255,0.04); }
+            .editor-tab { flex:1; background:transparent; border:none; color:#64748b; padding:10px; font-weight:700; cursor:pointer; text-align:center; font-size:11px; border-bottom:2px solid transparent; outline:none; transition:all 0.2s; }
+            .editor-tab.active { color:#00f0ff; border-bottom-color:#00f0ff; background:rgba(0, 240, 255, 0.03); }
+            .editor-content { flex:1; display:flex; position:relative; }
+            textarea { position:absolute; top:0; left:0; width:100%; height:100%; background:transparent; border:none; color:#cbd5e1; font-family:monospace; font-size:12px; padding:16px; outline:none; resize:none; box-sizing:border-box; display:none; }
+            textarea.active { display:block; }
+            .preview-pane { flex:1; background:#fff; position:relative; }
+            iframe { border:none; width:100%; height:100%; }
+        </style>
+    </head>
+    <body>
+        <div class="sandbox-header">
+            <span class="sandbox-title">⚡ HTML SELECTION SANDBOX</span>
+            <span style="color:#64748b; font-size:10px; font-weight:700;">LIVE INTERACTIVE RUNNER</span>
+        </div>
+        <div class="sandbox-split">
+            <div class="editor-pane">
+                <div class="editor-tabs">
+                    <button class="editor-tab active" data-editor="html">HTML</button>
+                    <button class="editor-tab" data-editor="css">CSS</button>
+                    <button class="editor-tab" data-editor="js">JS</button>
+                </div>
+                <div class="editor-content">
+                    <textarea id="editor-html" class="active" placeholder="Write HTML here...">${initialHtml}</textarea>
+                    <textarea id="editor-css" placeholder="Write CSS here..."></textarea>
+                    <textarea id="editor-js" placeholder="Write JavaScript here..."></textarea>
+                </div>
+            </div>
+            <div class="preview-pane"><iframe id="sandbox-iframe"></iframe></div>
+        </div>
+        <script>
+            const htmlArea = document.getElementById('editor-html');
+            const cssArea = document.getElementById('editor-css');
+            const jsArea = document.getElementById('editor-js');
+            const iframe = document.getElementById('sandbox-iframe');
+            
+            const tabs = document.querySelectorAll('.editor-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.querySelectorAll('textarea').forEach(tx => tx.classList.remove('active'));
+                    document.getElementById('editor-' + tab.getAttribute('data-editor')).classList.add('active');
+                });
+            });
+            
+            function updatePreview() {
+                iframe.srcdoc = "<!DOCTYPE html><html><head><style>" + cssArea.value + "</style></head><body>" + htmlArea.value + "<script>" + jsArea.value + "</script></body></html>";
             }
-        } catch (err) {
-            console.error('Error inlining CSS:', href, err);
-        }
-        return match;
-    });
-
-    // Inline JS Scripts
-    const scriptRegex = /<script\s+[^>]*src=["']([^"']+\.js)["'][^>]*>\s*<\/script>/gi;
-    result = result.replace(scriptRegex, (match, src) => {
-        if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//')) {
-            return match;
-        }
-        try {
-            const jsPath = path.resolve(dir, src);
-            if (fs.existsSync(jsPath)) {
-                const jsContent = fs.readFileSync(jsPath, 'utf8');
-                return `<!-- INLINE_JS_ORIGINAL_START src="${src}" -->${match}<!-- INLINE_JS_ORIGINAL_END -->\n<script data-inlined-from="${src}">\n${jsContent}\n</script>`;
-            }
-        } catch (err) {
-            console.error('Error inlining JS:', src, err);
-        }
-        return match;
-    });
-
-    return result;
+            htmlArea.oninput = updatePreview;
+            cssArea.oninput = updatePreview;
+            jsArea.oninput = updatePreview;
+            updatePreview();
+        </script>
+    </body>
+    </html>
+    `;
 }
 
 /**
- * Injects `<base>` tag, scroll state restoration, and edit inspector scripts
+ * Injects `<base>` and scroll preservation script into the HTML content
  * @param {string} html 
- * @param {string} htmlFilePath
  * @param {string} baseUri 
+ * @param {string} filePath
  * @returns {string}
  */
-function injectPreviewScripts(html, htmlFilePath, baseUri) {
-    // 1. Inline CSS and JS assets locally
-    let result = inlineAssets(html, htmlFilePath);
+function injectBaseAndScrollScript(html, baseUri, filePath) {
+    let result = html;
     
     // Inject <base> tag
     const baseTag = `<base href="${baseUri}">`;
@@ -727,177 +560,94 @@ function injectPreviewScripts(html, htmlFilePath, baseUri) {
     else if (result.includes('<HEAD>')) { result = result.replace('<HEAD>', `<HEAD>${baseTag}`); }
     else { result = baseTag + result; }
     
-    // Inject Scroll State Restoration script
-    const scrollScript = `<!-- INJECT_SCROLL_START -->
+    // Inject Scroll State Restoration script and Header CSS
+    const headerStyle = `
+    <style>
+        html { padding-top: 34px !important; box-sizing: border-box; }
+    </style>
+    `;
+    const scrollScript = `
+    ${headerStyle}
     <script>
         (function() {
-            const vscode = acquireVsCodeApi();
+            window.vscode = window.vscode || acquireVsCodeApi();
             // Restore scroll position
-            const state = vscode.getState();
+            const state = window.vscode.getState();
             if (state) {
                 window.scrollTo(state.scrollX, state.scrollY);
             }
             // Save scroll position on scroll events
             window.addEventListener('scroll', () => {
-                vscode.setState({ scrollX: window.scrollX, scrollY: window.scrollY });
+                window.vscode.setState({ scrollX: window.scrollX, scrollY: window.scrollY });
             });
         })();
     </script>
-    <!-- INJECT_SCROLL_END -->`;
+    `;
     
-    // Inject Dev Overlay Inspector script
-    const inspectorScript = `<!-- INJECT_INSPECTOR_START -->
-    <script>
-    (function() {
-        let inspectorActive = false;
-        let hoveredEl = null;
-
-        // Create the editing modal
-        const modal = document.createElement('div');
-        modal.id = 'live-preview-edit-modal';
-        modal.style.cssText = 'position:fixed;z-index:999999;background:#0d111c;color:#cbd5e1;border:1px solid #00f0ff;border-radius:8px;padding:16px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:12px;box-shadow:0 10px 25px rgba(0,0,0,0.5);width:300px;display:none;flex-direction:column;gap:10px;';
-        modal.innerHTML = \`
-            <div style="font-weight:bold;color:#00f0ff;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                <span>Edit Element: &lt;<span id="modal-tag-name"></span>&gt;</span>
-            </div>
-            <div>
-                <label style="display:block;margin-bottom:4px;font-weight:600;">Text / HTML Content:</label>
-                <textarea id="modal-text-content" rows="4" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:6px;box-sizing:border-box;font-family:monospace;font-size:11px;outline:none;resize:vertical;"></textarea>
-            </div>
-            <div>
-                <label style="display:block;margin-bottom:4px;font-weight:600;">Inline Style (CSS):</label>
-                <input type="text" id="modal-style-content" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:6px;box-sizing:border-box;outline:none;" />
-            </div>
-            <div>
-                <label style="display:block;margin-bottom:4px;font-weight:600;">Classes:</label>
-                <input type="text" id="modal-class-content" style="width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff;padding:6px;box-sizing:border-box;outline:none;" />
-            </div>
-            <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px;">
-                <button id="modal-btn-cancel" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#cbd5e1;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:600;outline:none;">Cancel</button>
-                <button id="modal-btn-save" style="background:#00f0ff;border:none;color:#0d111c;padding:6px 12px;border-radius:4px;cursor:pointer;font-weight:bold;outline:none;">Save Changes</button>
-            </div>
-        \`;
-        document.body.appendChild(modal);
-
-        const modalTagName = modal.querySelector('#modal-tag-name');
-        const modalText = modal.querySelector('#modal-text-content');
-        const modalStyle = modal.querySelector('#modal-style-content');
-        const modalClass = modal.querySelector('#modal-class-content');
-        const btnCancel = modal.querySelector('#modal-btn-cancel');
-        const btnSave = modal.querySelector('#modal-btn-save');
-
-        let currentEditingEl = null;
-
-        window.addEventListener('message', event => {
-            const data = event.data;
-            if (data.type === 'toggleInspector') {
-                inspectorActive = data.active;
-                if (!inspectorActive) {
-                    if (hoveredEl) {
-                        hoveredEl.style.outline = hoveredEl.dataset.origOutline || '';
-                        hoveredEl = null;
-                    }
-                    modal.style.display = 'none';
-                }
-            }
-        });
-
-        document.addEventListener('mouseover', e => {
-            if (!inspectorActive) return;
-            if (e.target === modal || modal.contains(e.target)) return;
-            
-            if (hoveredEl && hoveredEl !== e.target) {
-                hoveredEl.style.outline = hoveredEl.dataset.origOutline || '';
-            }
-            hoveredEl = e.target;
-            if (!hoveredEl.dataset.hasOwnProperty('origOutline')) {
-                hoveredEl.dataset.origOutline = hoveredEl.style.outline;
-            }
-            hoveredEl.style.outline = '2px dashed #00f0ff';
-            hoveredEl.style.outlineOffset = '-2px';
-        });
-
-        document.addEventListener('mouseout', e => {
-            if (!inspectorActive) return;
-            if (e.target === hoveredEl) {
-                hoveredEl.style.outline = hoveredEl.dataset.origOutline || '';
-                hoveredEl = null;
-            }
-        });
-
-        document.addEventListener('click', e => {
-            if (!inspectorActive) return;
-            if (e.target === modal || modal.contains(e.target)) return;
-            
-            e.preventDefault();
-            e.stopPropagation();
-
-            currentEditingEl = e.target;
-            modalTagName.textContent = currentEditingEl.tagName.toLowerCase();
-            modalText.value = currentEditingEl.innerHTML;
-            modalStyle.value = currentEditingEl.getAttribute('style') || '';
-            modalClass.value = currentEditingEl.getAttribute('class') || '';
-
-            const rect = currentEditingEl.getBoundingClientRect();
-            let top = rect.bottom + window.scrollY + 10;
-            let left = rect.left + window.scrollX;
-            
-            if (left + 320 > window.innerWidth) left = window.innerWidth - 340;
-            if (left < 10) left = 10;
-            if (top + 250 > window.innerHeight) top = rect.top + window.scrollY - 230;
-            if (top < 10) top = 10;
-
-            modal.style.top = top + 'px';
-            modal.style.left = left + 'px';
-            modal.style.display = 'flex';
-        }, true);
-
-        btnCancel.onclick = () => {
-            modal.style.display = 'none';
-            currentEditingEl = null;
-        };
-
-        btnSave.onclick = () => {
-            if (currentEditingEl) {
-                currentEditingEl.innerHTML = modalText.value;
-                if (modalStyle.value.trim() !== '') {
-                    currentEditingEl.setAttribute('style', modalStyle.value);
-                } else {
-                    currentEditingEl.removeAttribute('style');
-                }
-                if (modalClass.value.trim() !== '') {
-                    currentEditingEl.setAttribute('class', modalClass.value);
-                } else {
-                    currentEditingEl.removeAttribute('class');
-                }
-                
-                currentEditingEl.style.outline = currentEditingEl.dataset.origOutline || '';
-                delete currentEditingEl.dataset.origOutline;
-                
-                modal.style.display = 'none';
-                modal.remove();
-                
-                const docHtml = document.documentElement.outerHTML;
-                document.body.appendChild(modal);
-
-                window.parent.postMessage({
-                    type: 'updateDocumentHtml',
-                    html: '<!DOCTYPE html>\\n' + docHtml
-                }, '*');
-                
-                currentEditingEl = null;
-            }
-        };
-    })();
-    </script>
-    <!-- INJECT_INSPECTOR_END -->`;
-
-    const combined = scrollScript + '\n' + inspectorScript;
-    if (result.includes('</body>')) { result = result.replace('</body>', `${combined}</body>`); }
-    else if (result.includes('</BODY>')) { result = result.replace('</BODY>', `${combined}</BODY>`); }
-    else { result = result + combined; }
+    if (result.includes('</body>')) { result = result.replace('</body>', `${scrollScript}</body>`); }
+    else if (result.includes('</BODY>')) { result = result.replace('</BODY>', `${scrollScript}</BODY>`); }
+    else { result = result + scrollScript; }
+    
+    // Inject Header Bar
+    const headerBar = getHeaderBar(filePath);
+    if (result.includes('<body>')) { result = result.replace('<body>', `<body>${headerBar}`); }
+    else if (result.includes('<BODY>')) { result = result.replace('<BODY>', `<BODY>${headerBar}`); }
+    else { result = headerBar + result; }
     
     return result;
+}
+
+/**
+ * Creates the HTML wrapper structure for PDF assets
+ */
+function getPdfHtml(pdfUri, filePath) {
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            html, body { margin:0; padding:0; height:100vh; overflow:hidden; }
+            body { background:#060810; display:flex; flex-direction:column; }
+            .pdf-container { flex:1; width:100%; height:calc(100vh - 34px); position:relative; }
+            embed { width:100%; height:100%; border:none; }
+        </style>
+    </head>
+    <body>
+        ${getHeaderBar(filePath)}
+        <div class="pdf-container">
+            <embed src="${pdfUri}" type="application/pdf">
+        </div>
+    </body>
+    </html>
+    `;
+}
+
+/**
+ * Renders the top header bar showing full filename path and reload button
+ */
+function getHeaderBar(filePath) {
+    const escapedPath = filePath.replace(/\\/g, '\\\\');
+    return `
+    <div id="live-preview-header-bar" style="position: fixed; top: 0; left: 0; right: 0; height: 34px; background: #0b0f19; border-bottom: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; box-sizing: border-box; z-index: 2147483647; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; color: #8892b0; user-select: none;">
+        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85%; font-family: monospace; font-weight: 500;" title="${escapedPath}">${escapedPath}</span>
+        <button id="live-preview-reload-btn" style="background: transparent; border: none; color: #00f0ff; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 4px; transition: background 0.2s; outline: none;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+        </button>
+    </div>
+    <script>
+        (function() {
+            const btn = document.getElementById('live-preview-reload-btn');
+            if (btn) {
+                btn.onclick = function() {
+                    window.vscode = window.vscode || acquireVsCodeApi();
+                    window.vscode.postMessage({ command: 'reload' });
+                };
+            }
+        })();
+    </script>
+    `;
 }
 
 function deactivate() {
