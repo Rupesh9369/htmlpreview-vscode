@@ -18,13 +18,13 @@ let statusBarItem;
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-    console.log('HTML Preview extension is active.');
+    console.log('Live Preview HTML extension is active.');
 
     // Create and configure VS Code Status Bar Item
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     statusBarItem.command = 'htmlpreview-vscode.openPreview';
-    statusBarItem.text = '$(play) HTML Preview';
-    statusBarItem.tooltip = 'Show HTML Preview';
+    statusBarItem.text = '$(play) Live Preview HTML';
+    statusBarItem.tooltip = 'Show Live Preview HTML';
     context.subscriptions.push(statusBarItem);
 
     // Watchers to toggle status bar visibility based on active editor file type
