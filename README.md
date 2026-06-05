@@ -72,14 +72,14 @@ This is an open-source project! We welcome developers to contribute, submit bug 
    ```
 2. Install the created package in VS Code:
    ```bash
-   code --install-extension htmlpreview-vscode-1.0.4.vsix
+   code --install-extension htmlpreview-vscode-1.0.5.vsix
    ```
 
 ---
 
 ## Info
 
-- **Version**: 1.0.4
+- **Version**: 1.0.5
 - **Developer**: Rupesh9369
 - **GitHub**: [https://github.com/Rupesh9369/htmlpreview-vscode](https://github.com/Rupesh9369/htmlpreview-vscode)
 - **License**: MIT
